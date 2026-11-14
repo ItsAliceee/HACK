@@ -1,1 +1,58 @@
+from google import genai
+
+
+sale_items = []
+filename = "supermarket_products.csv"
+openedfile = open(filename, encoding="utf-8")
+
+openedfile.readline()
+
+sale_items = []
+
+for line in openedfile:
+    line = line.strip()
+
+    # Split from the right 3 times to isolate the 3 price columns safely
+    left_side, price, price_per_kg, saved = line.rsplit(",", 3)
+
+    # Split the left side once to separate Category from Item name
+    category, item = left_side.split(",", 1)
+
+    # Clean up any extra quotes around item names that had commas
+    item = item.strip('"')
+
+    # Convert "$0.71" -> 0.71
+    saved_amount = float(saved.replace("$", ""))
+
+    if saved_amount > 0:
+        sale_items.append(f"{item} ({price}, save {saved})")
+
+openedfile.close()
+
+print("Sale items found:", len(sale_items))
+for x in sale_items:
+    print("-", x)
+
+
+# 1. Log in to Google AI using your personal API key
+client = genai.Client(api_key="PASTE_YOUR_API_KEY_HERE")
+
+# 2. Turn your Python list of sale items into one normal sentence
+# Example: ["Avocado ($1.00)", "Acorn Squash ($1.85)"] -> "Avocado ($1.00), Acorn Squash ($1.85)"
+ingredients_text = ", ".join(sale_items)
+
+# 3. Write the exact question you want to ask the AI
+prompt = f"""
+These supermarket items are on sale: {ingredients_text}.
+Give me 2 simple recipes using mostly these ingredients. 
+Assume I already have salt, pepper, oil, and butter.
+"""
+
+# 4. Hit "Send" and wait for the AI's reply
+response = client.models.generate_content(
+    model="gemini-2.5-flash", contents=prompt
+)
+
+# 5. Print the AI's reply to your screen
+print(response.text)
 
